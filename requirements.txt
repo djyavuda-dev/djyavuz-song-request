@@ -1,0 +1,5 @@
+flask
+gunicorn
+spotipy
+python-dotenv
+qrcode[pil]
