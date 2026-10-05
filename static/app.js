@@ -1,6 +1,13 @@
 const input = document.getElementById('q');
+const nameInput = document.getElementById('name');
 const resultsEl = document.getElementById('results');
 const statusEl = document.getElementById('status');
+
+// Remember the name for this visitor so they don't retype it on every request.
+nameInput.value = sessionStorage.getItem('requesterName') || '';
+nameInput.addEventListener('input', () => {
+  sessionStorage.setItem('requesterName', nameInput.value);
+});
 
 let debounceTimer = null;
 
@@ -39,6 +46,13 @@ function renderResults(tracks) {
 }
 
 async function requestTrack(track, button) {
+  const requesterName = nameInput.value.trim();
+  if (!requesterName) {
+    setStatus('Önce adını yaz.', 'error');
+    nameInput.focus();
+    return;
+  }
+
   button.disabled = true;
   button.textContent = '...';
   setStatus('', '');
@@ -47,7 +61,13 @@ async function requestTrack(track, button) {
     const res = await fetch('/api/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: track.id, uri: track.uri }),
+      body: JSON.stringify({
+        id: track.id,
+        uri: track.uri,
+        name: track.name,
+        artist: track.artist,
+        requester_name: requesterName,
+      }),
     });
     const data = await res.json();
     if (data.ok) {

@@ -26,6 +26,14 @@ body {
   max-width: 440px;
 }
 
+.slip__logo {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto 24px;
+  border-radius: 12px;
+}
+
 .slip__head h1 {
   font-family: 'Fraunces', serif;
   font-weight: 600;
@@ -42,6 +50,12 @@ body {
   max-width: 34ch;
 }
 
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .search input {
   width: 100%;
   background: var(--surface);
@@ -51,6 +65,12 @@ body {
   font-size: 1rem;
   color: var(--ink);
   font-family: inherit;
+}
+
+#name {
+  font-size: 0.9rem;
+  padding: 11px 16px;
+  border-color: #2A2E32;
 }
 
 .search input:focus {

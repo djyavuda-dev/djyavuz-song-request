@@ -60,6 +60,9 @@ RECENT_TRACK_WINDOW_SECONDS = 60 * 20   # don't re-add the same track twice in 2
 _last_request_by_ip = {}
 _recently_added_tracks = deque()  # (track_id, timestamp)
 
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "")  # set this on your host to protect /admin
+_request_log = deque(maxlen=200)  # most recent requests, for the DJ's own view
+
 
 def get_spotify_client():
     """Returns a Spotify client, refreshing the access token as needed.
@@ -154,8 +157,14 @@ def request_song():
     data = request.get_json(force=True)
     track_id = data.get("id")
     track_uri = data.get("uri")
+    track_name = data.get("name", "")
+    track_artist = data.get("artist", "")
+    requester_name = (data.get("requester_name") or "").strip()[:40]  # cap length
+
     if not track_id or not track_uri:
         return jsonify({"ok": False, "error": "Geçersiz şarkı."}), 400
+    if not requester_name:
+        return jsonify({"ok": False, "error": "Adını yazmayı unuttun."}), 400
 
     if is_recently_added(track_id):
         return jsonify({"ok": False, "error": "Bu şarkı zaten listede — başka bir şey dene."}), 409
@@ -167,8 +176,40 @@ def request_song():
 
     _last_request_by_ip[ip] = now
     _recently_added_tracks.append((track_id, now))
+    _request_log.appendleft({
+        "name": track_name,
+        "artist": track_artist,
+        "requester": requester_name,
+        "time": time.strftime("%H:%M:%S", time.localtime(now)),
+    })
 
     return jsonify({"ok": True})
+
+
+# ---------- DJ-only view: who requested what ----------
+
+@app.route("/admin")
+def admin():
+    if ADMIN_KEY and request.args.get("key") != ADMIN_KEY:
+        return "Yetkisiz.", 403
+
+    rows = "".join(
+        f"<tr><td>{r['time']}</td><td>{r['requester']}</td>"
+        f"<td>{r['name']} — {r['artist']}</td></tr>"
+        for r in _request_log
+    )
+    return f"""
+    <html><head><meta http-equiv="refresh" content="15">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {{ font-family: sans-serif; background:#15181B; color:#EDE9E0; padding:16px; }}
+      table {{ width:100%; border-collapse: collapse; }}
+      td {{ padding:8px 6px; border-bottom:1px solid #333; font-size:0.9rem; }}
+      h1 {{ font-size:1.2rem; }}
+    </style></head>
+    <body><h1>İstekler ({len(_request_log)})</h1>
+    <table>{rows}</table></body></html>
+    """
 
 
 if __name__ == "__main__":
