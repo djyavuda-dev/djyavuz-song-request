@@ -1,13 +1,9 @@
 const input = document.getElementById('q');
-const nameInput = document.getElementById('name');
 const resultsEl = document.getElementById('results');
 const statusEl = document.getElementById('status');
 
-// Remember the name for this visitor so they don't retype it on every request.
-nameInput.value = sessionStorage.getItem('requesterName') || '';
-nameInput.addEventListener('input', () => {
-  sessionStorage.setItem('requesterName', nameInput.value);
-});
+// Names are no longer collected; the server still receives a fixed placeholder.
+const GUEST_NAME = 'Misafir / Guest';
 
 let debounceTimer = null;
 
@@ -38,7 +34,7 @@ function renderResults(tracks) {
         <div class="track__name">${escapeHtml(t.name)}</div>
         <div class="track__artist">${escapeHtml(t.artist)}</div>
       </div>
-      <button class="track__button">İste</button>
+      <button class="track__button">Request / İste</button>
     `;
     li.querySelector('button').addEventListener('click', (e) => requestTrack(t, e.target));
     resultsEl.appendChild(li);
@@ -46,13 +42,6 @@ function renderResults(tracks) {
 }
 
 async function requestTrack(track, button) {
-  const requesterName = nameInput.value.trim();
-  if (!requesterName) {
-    setStatus('Önce adını yaz.', 'error');
-    nameInput.focus();
-    return;
-  }
-
   button.disabled = true;
   button.textContent = '...';
   setStatus('', '');
@@ -66,22 +55,22 @@ async function requestTrack(track, button) {
         uri: track.uri,
         name: track.name,
         artist: track.artist,
-        requester_name: requesterName,
+        requester_name: GUEST_NAME,
       }),
     });
     const data = await res.json();
     if (data.ok) {
-      button.textContent = 'Eklendi';
-      setStatus(`"${track.name}" listeye eklendi.`, 'ok');
+      button.textContent = 'Added / Eklendi';
+      setStatus(`"${track.name}" added to the list. / listeye eklendi.`, 'ok');
     } else {
       button.disabled = false;
-      button.textContent = 'İste';
-      setStatus(data.error || 'Bir şeyler ters gitti.', 'error');
+      button.textContent = 'Request / İste';
+      setStatus(data.error || 'Something went wrong. / Bir şeyler ters gitti.', 'error');
     }
   } catch (err) {
     button.disabled = false;
-    button.textContent = 'İste';
-    setStatus('Bağlantı hatası, tekrar dene.', 'error');
+    button.textContent = 'Request / İste';
+    setStatus('Connection error, try again. / Bağlantı hatası, tekrar dene.', 'error');
   }
 }
 
